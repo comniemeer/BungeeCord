@@ -98,6 +98,10 @@ public class InitialHandler extends PacketHandler implements PendingConnection
 
         HANDSHAKE, STATUS, PING, USERNAME, ENCRYPT, FINISHED;
     }
+    
+    public ChannelWrapper getCh() {
+        return this.ch;
+    }
 
     @Override
     public void connected(ChannelWrapper channel) throws Exception
@@ -238,7 +242,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
         Preconditions.checkState( thisState == State.PING, "Not expecting PING" );
         unsafe.sendPacket( ping );
         disconnect( "" );
-        unsafe.sendPacket( ping );
+//        unsafe.sendPacket( ping );
     }
 
     @Override
