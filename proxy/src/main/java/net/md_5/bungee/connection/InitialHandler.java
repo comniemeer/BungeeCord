@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import javax.crypto.SecretKey;
 
-import com.google.gson.Gson;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +55,6 @@ import net.md_5.bungee.protocol.packet.LoginRequest;
 import net.md_5.bungee.protocol.packet.LoginSuccess;
 import net.md_5.bungee.protocol.packet.PingPacket;
 import net.md_5.bungee.protocol.packet.StatusRequest;
-import net.md_5.bungee.protocol.packet.StatusResponse;
 
 @RequiredArgsConstructor
 public class InitialHandler extends PacketHandler implements PendingConnection
@@ -73,7 +71,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     private EncryptionRequest request;
     @Getter
     private final List<PluginMessage> registerMessages = new ArrayList<>();
-    private State thisState = State.HANDSHAKE;
+    public State thisState = State.HANDSHAKE;
     private final Unsafe unsafe = new Unsafe()
     {
         @Override
@@ -95,7 +93,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     @Getter
     private boolean legacy;
 
-    private enum State
+    public enum State
     {
 
         HANDSHAKE, STATUS, PING, USERNAME, ENCRYPT, FINISHED;
@@ -209,9 +207,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
                     @Override
                     public void done(ProxyPingEvent pingResult, Throwable error)
                     {
-                        BungeeCord.getInstance().getConnectionThrottle().unthrottle( getAddress().getAddress() );
-                        Gson gson = handshake.getProtocolVersion() == ProtocolConstants.MINECRAFT_1_7_2 ? BungeeCord.getInstance().gsonLegacy : BungeeCord.getInstance().gson;
-                        unsafe.sendPacket( new StatusResponse( gson.toJson( pingResult.getResponse() ) ) );
+                        new AnimatedMotd().handleSend( pingResult, InitialHandler.this );
                     }
                 };
 
@@ -238,9 +234,11 @@ public class InitialHandler extends PacketHandler implements PendingConnection
     @Override
     public void handle(PingPacket ping) throws Exception
     {
+        if ( thisState == State.PING ) return;
         Preconditions.checkState( thisState == State.PING, "Not expecting PING" );
         unsafe.sendPacket( ping );
         disconnect( "" );
+        unsafe.sendPacket( ping );
     }
 
     @Override
